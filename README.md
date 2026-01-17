@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/ma
 
 ✅ Hysteria2
 
-✅ 进程守护Alpine （OpenRC + supervise-daemon）
+✅ 进程守护Alpine (OpenRC + supervise-daemon)
 
 ✅ 进程守护Debian-Ubuntu (systemd Restart=always)
 
