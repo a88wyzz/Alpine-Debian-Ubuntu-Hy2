@@ -30,6 +30,6 @@ VPS低于128M内存使用Hy2，建议在v2rayN客户端开启限速至55mbps比�
 # 一键卸载脚本
 
 ```
-curl -fsSL https://raw.githubusercontent.com/Alpine-Debian-Ubuntu-Hy2/main/Uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/Delete.sh | bash
 
 ```
