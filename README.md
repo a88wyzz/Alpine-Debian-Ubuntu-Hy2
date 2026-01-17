@@ -1,4 +1,4 @@
-# VPS运行以下脚本：
+# VPS运行以下脚本(AI生成)：
 
 ```
 curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/hy2.sh | bash
