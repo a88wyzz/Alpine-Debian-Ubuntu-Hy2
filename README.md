@@ -1,11 +1,11 @@
-# Alpine-Hy2 [本脚本由OpenAI生成]
+# VPS运行以下脚本：
 
 ```
-curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-hy2/main/hy2.sh | bash
+curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/hy2.sh | bash
 
 ```
 
-仅支持Alpine系统，进程监视守护，开机自启动
+支持Alpine、Debian、ubuntu系统，进程监视守护，开机自启动
 
 使用 www.bing.com 自签证书，跳过证书验证设置true
 
@@ -19,7 +19,9 @@ curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-hy2/main/hy2.sh | ba
 
 ✅ Hysteria2
 
-✅ 真进程守护（OpenRC + supervise-daemon）
+✅ 进程守护Alpine （OpenRC + supervise-daemon）
+
+✅ 进程守护Debian-Ubuntu (systemd Restart=always)
 
 ✅ 输出 IPv4 + IPv6 的 v2rayN 链接
 
@@ -28,6 +30,6 @@ VPS低于128M内存使用Hy2，建议在v2rayN客户端开启限速至55mbps比�
 # 一键卸载脚本
 
 ```
-curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-hy2/main/Uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Alpine-Debian-Ubuntu-Hy2/main/Uninstall.sh | bash
 
 ```
