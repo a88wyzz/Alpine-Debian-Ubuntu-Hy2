@@ -49,8 +49,8 @@ show_info() {
     PASSWORD=$(jq -r '.auth.password' "$CONF")
 
     echo -e "${YELLOW}正在检测公网 IP 地址...${NC}"
-    IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 ifconfig.me || echo "")
-    IP6=$(curl -s6 --connect-timeout 5 ip.sb || curl -s6 --connect-timeout 5 ifconfig.me || echo "")
+    IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 icanhazip.com || echo "")
+    IP6=$(curl -s6 --connect-timeout 5 ip.sb || curl -s6 --connect-timeout 5 icanhazip.com || echo "")
 
     echo -e "\n${GREEN}========== Hysteria2 配置信息 ==========${NC}"
     echo -e "📌 IPv4地址: ${YELLOW}$IP4${NC}"
