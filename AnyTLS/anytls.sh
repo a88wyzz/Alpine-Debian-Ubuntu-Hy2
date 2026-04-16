@@ -86,8 +86,8 @@ show_info() {
     PASS=$(jq -r '.password' "$CONF")
     
     echo -e "${YELLOW}正在检测公网 IP...${NC}"
-    IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 ifconfig.me || echo "")
-    IP6=$(curl -s6 --connect-timeout 5 ip.sb || curl -s6 --connect-timeout 5 ifconfig.me || echo "")
+    IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 icanhazip.com || echo "")
+    IP6=$(curl -s6 --connect-timeout 5 ip.sb || curl -s6 --connect-timeout 5 icanhazip.com || echo "")
 
     echo -e "\n${GREEN}========== AnyTLS 配置信息 ==========${NC}"
     echo -e "🔐 密码: ${YELLOW}$PASS${NC}"
