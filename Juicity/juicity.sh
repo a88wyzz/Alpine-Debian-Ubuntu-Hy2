@@ -126,8 +126,8 @@ view_config() {
     UUID=$(jq -r '.users | keys[0]' $CONFIG_FILE)
     PASS=$(jq -r --arg uuid "$UUID" '.users[$uuid]' $CONFIG_FILE)
     
-    IP4=$(curl -s4 ip.sb || curl -s4 ifconfig.me)
-    IP6=$(curl -s6 ip.sb || curl -s6 ifconfig.me)
+    IP4=$(curl -s4 ip.sb || curl -s4 icanhazip.com)
+    IP6=$(curl -s6 ip.sb || curl -s6 icanhazip.com)
     
     CERT_HASH=$($BIN_FILE generate-certchain-hash --cert $CERT_DIR/fullchain.pem 2>/dev/null | head -n 1)
     [ -z "$CERT_HASH" ] && CERT_HASH=$(openssl x509 -in $CERT_DIR/fullchain.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
