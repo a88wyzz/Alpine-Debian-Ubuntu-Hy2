@@ -5,7 +5,7 @@
 支持架构： x86_64 / ARM64
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/NaiveProxy/naiveproxy.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/NaiveProxy/naiveproxy.sh)
 
 ```
 客户端推荐使用Throne(基于sing-box)，支持导入NaiveProxy节点链接： https://github.com/throneproj/Throne
