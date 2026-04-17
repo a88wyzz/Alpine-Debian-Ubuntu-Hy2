@@ -14,6 +14,7 @@ PASS_FILE="$WORKDIR/password.txt"
 GREEN='\e[32m'
 RED='\e[31m'
 YELLOW='\e[33m'
+CYAN='\e[36m'
 NC='\e[0m'
 
 [[ "$(id -u)" != "0" ]] && { echo -e "${RED}❌ 请使用 root 运行${NC}"; exit 1; }
@@ -118,7 +119,7 @@ install_hy2() {
     echo "$PORT" > "$PORT_FILE"
 
     echo -e "${YELLOW}▶ 生成自签证书...${NC}"
-    openssl req -x509 -nodes -newkey rsa:2048 -keyout "$WORKDIR/key.pem" -out "$WORKDIR/cert.pem" -days 3650 -subj "/CN=$SERVER_NAME"
+    openssl req -x509 -nodes -newkey rsa:2048 -keyout "$WORKDIR/key.pem" -out "$WORKDIR/cert.pem" -days 3650 -subj "/CN=$SERVER_NAME" 2>/dev/null
 
     # 使用 jq 构建初始 JSON 配置
     jq -n \
@@ -199,24 +200,65 @@ uninstall_hy2() {
     echo -e "${GREEN}✅ 卸载成功${NC}"
 }
 
+while true; do
+# 状态检测逻辑
+if [ "$OS" = "alpine" ]; then
+    if rc-service hysteria status 2>/dev/null | grep -q "started"; then
+        STATUS="${GREEN}正在运行${NC}"
+    else
+        STATUS="${RED}未安装或未运行${NC}"
+    fi
+else
+    if systemctl is-active --quiet hysteria 2>/dev/null; then
+        STATUS="${GREEN}正在运行${NC}"
+    else
+        STATUS="${RED}未安装或未运行${NC}"
+    fi
+fi
+
 # 菜单
 clear
-echo -e "${GREEN}--- Hysteria2 管理脚本 ---${NC}"
-echo "--------------------------"
-echo "1. 安装 Hysteria2"
-echo "2. 查看配置节点链接"
-echo "3. 更改监听端口"
-echo "4. 重启服务"
-echo "5. 卸载 Hysteria2"
-echo "0. 退出"
-echo "--------------------------"
-read -p "请输入数字选择: " choice
+echo -e "${GREEN}===============================================${NC}"
+echo -e "  Hysteria2 一键管理脚本"
+echo -e "  当前系统: $OS"
+echo -e "  Hy2状态： $STATUS"
+echo -e "${GREEN}===============================================${NC}"
+echo -e "  ${CYAN}[1]${NC}  安装 Hysteria2"
+echo -e "  ${CYAN}[2]${NC}  查看配置节点链接"
+echo -e "  ${CYAN}[3]${NC}  更改监听端口"
+echo -e "  ${CYAN}[4]${NC}  重启服务"
+echo -e "  ${CYAN}[5]${NC}  卸载 Hysteria2"
+echo -e "  ${CYAN}[0]${NC}  退出脚本"
+echo -e "${GREEN}===============================================${NC}"
+echo -ne "请输入数字选择 [0-5]: "
+read choice
 
 case $choice in
-    1) install_hy2 ;;
-    2) show_info ;;
-    3) change_port ;;
-    4) restart_service && echo -e "${GREEN}服务已重启${NC}" ;;
-    5) uninstall_hy2 ;;
-    *) exit 0 ;;
-esac
+        1)
+            install_hy2
+            ;;
+        2)
+            show_info
+            ;;
+        3)
+            change_port
+            ;;
+        4)
+            restart_service && echo -e "${GREEN}服务已重启${NC}"
+            ;;
+        5)
+            uninstall_hy2
+            ;;
+        0)
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}无效输入，请重新选择${NC}"
+            sleep 1
+            ;;
+    esac
+
+    echo -e "\n${YELLOW}按任意键返回主菜单...${NC}"
+    read -n 1 -s -r
+    clear
+done
