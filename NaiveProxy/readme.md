@@ -19,4 +19,4 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 # ⚠️ 注意
 
 * VPS必须开放80和443端口
-* 必须有一个域名以便Caddy申请TLS证书
+* VPS必须绑定解析一个域名以便Caddy申请TLS证书
