@@ -61,9 +61,9 @@ installProxy(){
     cyan ">>> 正在为 $SYSTEM 安装必要依赖..."
     $PACKAGE_UPDATE
     if [[ $SYSTEM == "Alpine" ]]; then
-        $PACKAGE_INSTALL curl wget sudo qrencode tar bash openrc
+        $PACKAGE_INSTALL curl wget sudo tar bash openrc
     else
-        $PACKAGE_INSTALL curl wget sudo qrencode tar
+        $PACKAGE_INSTALL curl wget sudo tar
     fi
 
     version=$(get_latest_ver)
@@ -198,9 +198,6 @@ showconf(){
         echo ""
         yellow " [2] 节点分享链接 (Throne / V2RayN):"
         echo -e "${GREEN}$(cat /root/naive/naive-url.txt)${PLAIN}"
-        echo ""
-        yellow " [3] 二维码扫描导入:"
-        qrencode -o - -t ANSIUTF8 "$(cat /root/naive/naive-url.txt)"
     fi
     echo -e "${CYAN}${BOLD}======================================================${PLAIN}"
     echo ""
