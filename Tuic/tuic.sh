@@ -221,24 +221,56 @@ uninstall_tuic() {
     echo -e "${GREEN}✅ 卸载成功${NC}"
 }
 
-# --- 菜单逻辑 ---
-clear
-echo -e "${GREEN}--- TUIC 管理脚本 ---${NC}"
-echo "--------------------------"
-echo "1. 安装 TUIC"
-echo "2. 查看配置信息"
-echo "3. 更改监听端口"
-echo "4. 重启服务"
-echo "5. 卸载 TUIC"
-echo "0. 退出"
-echo "--------------------------"
-read -p "请选择: " choice
+# --- 新增：按任意键返回函数 ---
+read_return() {
+    echo -e "\n${YELLOW}按任意键返回主菜单...${NC}"
+    read -n 1 -s -r -p ""
+}
 
-case $choice in
-    1) install_tuic ;;
-    2) show_info ;;
-    3) change_port ;;
-    4) restart_service && echo -e "${GREEN}服务已重启${NC}" ;;
-    5) uninstall_tuic ;;
-    *) exit 0 ;;
-esac
+# --- 菜单逻辑 ---
+while true; do
+    clear
+    echo -e "${GREEN}┌──────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│         TUIC 管理脚本 (v5)           │${NC}"
+    echo -e "${GREEN}├──────────────────────────────────────┤${NC}"
+    echo -e "${GREEN}│${NC}  1. 安装 TUIC                        ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  2. ${YELLOW}查看配置信息${NC}                    ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  3. 修改监听端口                    ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  4. 重启服务                        ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  5. ${RED}卸载 TUIC${NC}                        ${GREEN}│${NC}"
+    echo -e "${GREEN}│${NC}  0. 退出脚本                        ${GREEN}│${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────┘${NC}"
+    echo -ne "${GREEN}请选择 [0-5]: ${NC}"
+    read choice
+
+    case $choice in
+        1)
+            install_tuic
+            read_return
+            ;;
+        2)
+            show_info
+            read_return
+            ;;
+        3)
+            change_port
+            read_return
+            ;;
+        4)
+            restart_service && echo -e "${GREEN}✅ 服务已重启${NC}"
+            read_return
+            ;;
+        5)
+            uninstall_tuic
+            read_return
+            ;;
+        0)
+            echo -e "${YELLOW}退出脚本...${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}❌ 输入错误，请输入有效选项${NC}"
+            sleep 1
+            ;;
+    esac
+done
