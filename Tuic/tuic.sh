@@ -11,6 +11,8 @@ SERVICE_NAME="tuic"
 GREEN='\033[32m'
 YELLOW='\033[33m'
 RED='\033[31m'
+BLUE='\033[34m'
+CYAN='\033[36m'
 NC='\033[0m'
 
 # 权限检查
@@ -24,6 +26,23 @@ elif [ -f /etc/debian_version ] || [ -f /etc/lsb-release ]; then
 else
     echo -e "${RED}❌ 不支持的系统${NC}"; exit 1
 fi
+
+# 检查服务状态
+get_status() {
+    if command -v systemctl >/dev/null; then
+        if systemctl is-active --quiet ${SERVICE_NAME}; then
+            echo -e "${GREEN}正在运行${NC}"
+        else
+            echo -e "${RED}未运行${NC}"
+        fi
+    else
+        if rc-service ${SERVICE_NAME} status 2>/dev/null | grep -q "started"; then
+            echo -e "${GREEN}正在运行${NC}"
+        else
+            echo -e "${RED}未运行${NC}"
+        fi
+    fi
+}
 
 # 安装基础依赖
 install_dependencies() {
@@ -89,7 +108,6 @@ change_port() {
     HOST=$(echo $OLD_ADDR | rev | cut -d: -f2- | rev)
     
     echo -e "当前监听端口为: ${YELLOW}$OLD_PORT${NC}"
-    # 绿色显示提示
     echo -ne "${GREEN}请输入新端口 (直接回车则随机生成): ${NC}"
     read NEW_PORT
     
@@ -132,7 +150,6 @@ install_tuic() {
     fi
     chmod +x $BIN
 
-    # --- 绿色端口输入交互 ---
     echo -e "\n${GREEN}--- 基础配置 ---${NC}"
     echo -ne "${GREEN}请输入监听端口 (直接回车则随机生成): ${NC}"
     read INPUT_PORT
@@ -221,26 +238,29 @@ uninstall_tuic() {
     echo -e "${GREEN}✅ 卸载成功${NC}"
 }
 
-# --- 新增：按任意键返回函数 ---
+# 按任意键返回
 read_return() {
     echo -e "\n${YELLOW}按任意键返回主菜单...${NC}"
     read -n 1 -s -r -p ""
 }
 
-# --- 菜单逻辑 ---
+# --- 核心菜单逻辑 ---
 while true; do
     clear
-    echo -e "${GREEN}┌──────────────────────────────────────┐${NC}"
-    echo -e "${GREEN}│         TUIC 管理脚本 (v5)           │${NC}"
-    echo -e "${GREEN}├──────────────────────────────────────┤${NC}"
-    echo -e "${GREEN}│${NC}  1. 安装 TUIC                        ${GREEN}│${NC}"
-    echo -e "${GREEN}│${NC}  2. ${YELLOW}查看配置信息${NC}                    ${GREEN}│${NC}"
-    echo -e "${GREEN}│${NC}  3. 修改监听端口                    ${GREEN}│${NC}"
-    echo -e "${GREEN}│${NC}  4. 重启服务                        ${GREEN}│${NC}"
-    echo -e "${GREEN}│${NC}  5. ${RED}卸载 TUIC${NC}                        ${GREEN}│${NC}"
-    echo -e "${GREEN}│${NC}  0. 退出脚本                        ${GREEN}│${NC}"
-    echo -e "${GREEN}└──────────────────────────────────────┘${NC}"
-    echo -ne "${GREEN}请选择 [0-5]: ${NC}"
+    STATUS=$(get_status)
+    echo -e "${GREEN}===================================${NC}"
+    echo -e "  TUIC 一键管理脚本"
+    echo -e "  当前系统：${CYAN}$OS${NC}"
+    echo -e "  TUIC状态：$STATUS"
+    echo -e "${GREEN}===================================${NC}"
+    echo -e "  ${CYAN}[1]${NC}  安装 TUIC"
+    echo -e "  ${CYAN}[2]${NC}  查看配置节点链接"
+    echo -e "  ${CYAN}[3]${NC}  更改监听端口"
+    echo -e "  ${CYAN}[4]${NC}  重启服务"
+    echo -e "  ${CYAN}[5]${NC}  卸载 TUIC"
+    echo -e "  ${CYAN}[0]${NC}  退出脚本"
+    echo -e "${GREEN}===================================${NC}"
+    echo -ne " 请输入数字选择 [0-5]: "
     read choice
 
     case $choice in
@@ -265,11 +285,10 @@ while true; do
             read_return
             ;;
         0)
-            echo -e "${YELLOW}退出脚本...${NC}"
             exit 0
             ;;
         *)
-            echo -e "${RED}❌ 输入错误，请输入有效选项${NC}"
+            echo -e "${RED}❌ 无效选择${NC}"
             sleep 1
             ;;
     esac
