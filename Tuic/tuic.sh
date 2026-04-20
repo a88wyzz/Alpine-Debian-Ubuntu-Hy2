@@ -33,13 +33,13 @@ get_status() {
         if systemctl is-active --quiet ${SERVICE_NAME}; then
             echo -e "${GREEN}正在运行${NC}"
         else
-            echo -e "${RED}未运行${NC}"
+            echo -e "${RED}未安装或未运行${NC}"
         fi
     else
         if rc-service ${SERVICE_NAME} status 2>/dev/null | grep -q "started"; then
             echo -e "${GREEN}正在运行${NC}"
         else
-            echo -e "${RED}未运行${NC}"
+            echo -e "${RED}未安装或未运行${NC}"
         fi
     fi
 }
