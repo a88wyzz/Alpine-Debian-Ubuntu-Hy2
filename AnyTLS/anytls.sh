@@ -8,12 +8,15 @@ CONF="${WORK_DIR}/config.json"
 SERVICE_NAME="anytls"
 ### =====================
 
-GREEN='\033[32m'
-YELLOW='\033[33m'
-RED='\033[31m'
+# 终端颜色设置
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
-[[ "$(id -u)" != "0" ]] && { echo -e "${RED}❌ 请使用 root 运行${NC}"; exit 1; }
+# 权限检查
+[[ "$(id -u)" != "0" ]] && { echo -e "${RED}错误: 请使用 root 运行${NC}"; exit 1; }
 
 # 环境判断
 if [ -f /etc/alpine-release ]; then
@@ -21,8 +24,25 @@ if [ -f /etc/alpine-release ]; then
 elif [ -f /etc/debian_version ] || [ -f /etc/lsb-release ]; then
     OS="debian"
 else
-    echo -e "${RED}❌ 不支持的系统${NC}"; exit 1
+    OS="unknown"
 fi
+
+# 检查服务状态
+get_status() {
+    if command -v systemctl >/dev/null; then
+        if systemctl is-active --quiet ${SERVICE_NAME}; then
+            echo -e "${GREEN}正在运行${NC}"
+        else
+            echo -e "${RED}未安装或未运行${NC}"
+        fi
+    else
+        if rc-service ${SERVICE_NAME} status 2>/dev/null | grep -q "started"; then
+            echo -e "${GREEN}正在运行${NC}"
+        else
+            echo -e "${RED}未安装或未运行${NC}"
+        fi
+    fi
+}
 
 install_dependencies() {
     echo -e "${YELLOW}▶ 正在检查并安装必要依赖...${NC}"
@@ -33,7 +53,6 @@ install_dependencies() {
     fi
 }
 
-# 核心功能：更新系统服务启动参数
 update_service_config() {
     local port=$1
     local pass=$2
@@ -78,7 +97,7 @@ restart_service() {
 
 show_info() {
     if [ ! -f "$CONF" ]; then
-        echo -e "${RED}❌ 配置文件不存在${NC}"; return
+        echo -e "${RED}❌ 配置文件不存在，请先安装 AnyTLS${NC}"; return
     fi
     
     LISTEN=$(jq -r '.listen' "$CONF")
@@ -93,12 +112,18 @@ show_info() {
     echo -e "🔐 密码: ${YELLOW}$PASS${NC}"
     echo -e "🎲 端口: ${YELLOW}$PORT${NC}"
     
-    [[ -n "$IP4" ]] && echo -e "\n${GREEN}📎 IPv4 链接:${NC}\n${YELLOW}anytls://$PASS@$IP4:$PORT?insecure=1#AnyTLS_v4${NC}"
-    [[ -n "$IP6" ]] && echo -e "\n${GREEN}📎 IPv6 链接:${NC}\n${YELLOW}anytls://$PASS@[$IP6]:$PORT?insecure=1#AnyTLS_v6${NC}"
+    if [[ -n "$IP4" ]]; then
+        echo -e "\n${CYAN}📎 IPv4 链接:${NC}"
+        echo -e "${YELLOW}anytls://$PASS@$IP4:$PORT?insecure=1#AnyTLS_v4${NC}"
+    fi
+    
+    if [[ -n "$IP6" ]]; then
+        echo -e "\n${CYAN}📎 IPv6 链接:${NC}"
+        echo -e "${YELLOW}anytls://$PASS@[$IP6]:$PORT?insecure=1#AnyTLS_v6${NC}"
+    fi
     echo -e "${GREEN}=======================================${NC}\n"
 }
 
-# 更改端口功能
 change_port() {
     if [ ! -f "$CONF" ]; then
         echo -e "${RED}❌ 请先安装 AnyTLS${NC}"; return
@@ -108,7 +133,7 @@ change_port() {
     OLD_PORT=$(echo $OLD_LISTEN | rev | cut -d: -f1 | rev)
     PASS=$(jq -r '.password' "$CONF")
 
-    echo -e "当前端口为: ${YELLOW}$OLD_PORT${NC}"
+    echo -e "当前监听端口: ${YELLOW}$OLD_PORT${NC}"
     echo -ne "${GREEN}请输入新端口 (回车随机): ${NC}"
     read NEW_PORT
 
@@ -118,14 +143,11 @@ change_port() {
         echo -e "${RED}❌ 输入无效${NC}"; return
     fi
 
-    # 更新 JSON 记录
     tmp=$(mktemp)
     jq --arg nl "0.0.0.0:$NEW_PORT" '.listen = $nl' "$CONF" > "$tmp" && mv "$tmp" "$CONF"
 
-    # 更新系统服务参数
     update_service_config "$NEW_PORT" "$PASS"
 
-    # 放行防火墙
     if command -v ufw >/dev/null 2>&1; then
         ufw allow "$NEW_PORT"/udp
     elif command -v iptables >/dev/null 2>&1; then
@@ -133,7 +155,7 @@ change_port() {
     fi
 
     restart_service
-    echo -e "${GREEN}✅ 端口已成功更改为 $NEW_PORT 并重启服务${NC}"
+    echo -e "${GREEN}✅ 端口已更改为 $NEW_PORT${NC}"
     show_info
 }
 
@@ -168,7 +190,6 @@ install_anytls() {
 
     PASS=$(openssl rand -hex 4)
 
-    # 存入 JSON 记录
     cat > $CONF <<EOF
 {
   "listen": "0.0.0.0:${PORT}",
@@ -176,7 +197,6 @@ install_anytls() {
 }
 EOF
 
-    # 初始创建服务配置
     update_service_config "$PORT" "$PASS"
     
     if command -v systemctl >/dev/null; then
@@ -190,34 +210,54 @@ EOF
     show_info
 }
 
-# 菜单
-clear
-echo -e "${GREEN}--- AnyTLS-Go 管理脚本 ---${NC}"
-echo "--------------------------"
-echo "1. 安装 AnyTLS"
-echo "2. 查看配置信息"
-echo "3. 更改监听端口"
-echo "4. 重启服务"
-echo "5. 卸载 AnyTLS"
-echo "0. 退出"
-echo "--------------------------"
-read -p "选择: " choice
+# 辅助函数：按任意键返回
+read_return() {
+    echo -e "\n${YELLOW}按任意键返回主菜单...${NC}"
+    read -n 1 -s -r -p ""
+}
 
-case $choice in
-    1) install_anytls ;;
-    2) show_info ;;
-    3) change_port ;;
-    4) restart_service && echo -e "${GREEN}服务已重启${NC}" ;;
-    5) 
-        if command -v systemctl >/dev/null; then
-            systemctl stop ${SERVICE_NAME} && systemctl disable ${SERVICE_NAME}
-            rm -f /etc/systemd/system/${SERVICE_NAME}.service
-        else
-            rc-service ${SERVICE_NAME} stop && rc-update del ${SERVICE_NAME}
-            rm -f /etc/init.d/${SERVICE_NAME}
-        fi
-        rm -rf $WORK_DIR
-        echo -e "${GREEN}✅ AnyTLS 已完全卸载${NC}"
-        ;;
-    *) exit 0 ;;
-esac
+# 主循环
+while true; do
+    clear
+    STATUS=$(get_status)
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "  AnyTLS 一键管理脚本"
+    echo -e "  当前系统：${CYAN}$OS${NC}"
+    echo -e "  服务状态：$STATUS"
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "  ${CYAN}[1]${NC}  安装 AnyTLS"
+    echo -e "  ${CYAN}[2]${NC}  查看配置节点链接"
+    echo -e "  ${CYAN}[3]${NC}  修改监听端口"
+    echo -e "  ${CYAN}[4]${NC}  重启服务"
+    echo -e "  ${CYAN}[5]${NC}  卸载 AnyTLS"
+    echo -e "  ${CYAN}[0]${NC}  退出脚本"
+    echo -e "${GREEN}============================================${NC}"
+    echo -ne " 请输入数字选择 [0-5]: "
+    read choice
+
+    case $choice in
+        1) install_anytls; read_return ;;
+        2) show_info; read_return ;;
+        3) change_port; read_return ;;
+        4) restart_service && echo -e "${GREEN}✅ 服务已重启${NC}"; read_return ;;
+        5) 
+            echo -ne "${RED}确认卸载吗？(y/n): ${NC}"
+            read confirm
+            if [[ $confirm == [yY] ]]; then
+                if command -v systemctl >/dev/null; then
+                    systemctl stop ${SERVICE_NAME} && systemctl disable ${SERVICE_NAME}
+                    rm -f /etc/systemd/system/${SERVICE_NAME}.service
+                    systemctl daemon-reload
+                else
+                    rc-service ${SERVICE_NAME} stop && rc-update del ${SERVICE_NAME}
+                    rm -f /etc/init.d/${SERVICE_NAME}
+                fi
+                rm -rf $WORK_DIR
+                echo -e "${GREEN}✅ AnyTLS 已完全卸载${NC}"
+            fi
+            read_return
+            ;;
+        0) exit 0 ;;
+        *) echo -e "${RED}❌ 无效选择！${NC}"; sleep 1 ;;
+    esac
+done
