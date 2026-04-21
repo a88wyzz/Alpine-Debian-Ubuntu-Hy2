@@ -5,7 +5,7 @@
 支持架构： x86_64 / ARM64
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/Realiyt/reality.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/Reality/reality.sh)
 
 ```
 
