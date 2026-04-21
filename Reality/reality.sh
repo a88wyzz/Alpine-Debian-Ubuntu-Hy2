@@ -82,7 +82,7 @@ show_menu() {
     clear
     echo -e "${green}==================================================${plain}"
     echo -e "  VLESS-REALITY 一键管理脚本"
-    echo -e "  当前系统：$(ID= && [ -f /etc/os-release ] && . /etc/os-release && echo $ID || echo "alpine")"
+    echo -e "  当前系统：$(ID= && [ -f /etc/os-release ] && . /etc/os-release && echo $ID || echo "unknown")"
     
     if is_active; then
         echo -e "  Xray状态： ${green}正在运行${plain}"
@@ -212,8 +212,17 @@ view_config() {
         fi
 
         IPV4=$(curl -s4m 5 ipv4.ip.sb || curl -s4m 5 api.ipify.org)
+        IPV6=$(curl -s6m 5 ipv6.ip.sb || curl -s6m 5 api6.ipify.org)
+
         echo -e "\n${green}--- 节点链接信息 ---${plain}"
-        echo -e "${yellow}vless://${UUID}@${IPV4}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.shopify.com&fp=chrome&pbk=${pubKey}&sid=${sid}&type=tcp&headerType=none#REALITY_v4${plain}\n"
+        if [ -n "$IPV4" ]; then
+            echo -e "${green}[IPv4 节点]:${plain}"
+            echo -e "${yellow}vless://${UUID}@${IPV4}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.shopify.com&fp=chrome&pbk=${pubKey}&sid=${sid}&type=tcp&headerType=none#REALITY_v4${plain}\n"
+        fi
+        if [ -n "$IPV6" ]; then
+            echo -e "${green}[IPv6 节点]:${plain}"
+            echo -e "${yellow}vless://${UUID}@[${IPV6}]:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.shopify.com&fp=chrome&pbk=${pubKey}&sid=${sid}&type=tcp&headerType=none#REALITY_v6${plain}\n"
+        fi
     fi
     read -p "按回车键返回菜单..."
 }
@@ -223,7 +232,7 @@ change_port() {
     if [ ! -f "$XRAY_CONFIG" ]; then
         echo -e "${magenta}未安装服务！${plain}"
     else
-        echo -ne "请输入新端口: "
+        echo -ne "请输入新端口 (回车随机生成): "
         read input_port
         NEW_PORT=${input_port:-$(shuf -i 10000-65535 -n 1)}
         tmp=$(mktemp)
