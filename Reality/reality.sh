@@ -9,6 +9,8 @@ cyan='\033[1;36m' # 浅蓝色
 
 # 路径定义
 XRAY_CONFIG="/usr/local/etc/xray/config.json"
+XRAY_SERVICE="/etc/systemd/system/xray.service"
+XRAY_INIT_ALPINE="/etc/init.d/xray"
 
 # 检查 root 权限
 [[ $EUID -ne 0 ]] && echo -e "${magenta}请在 root 用户下运行脚本${plain}" && exit 1
@@ -24,15 +26,31 @@ install_dependencies() {
     fi
 }
 
+# 适配服务管理命令
+manage_service() {
+    local action=$1
+    if command -v systemctl &>/dev/null; then
+        systemctl $action xray
+    elif command -v rc-service &>/dev/null; then
+        rc-service xray $action
+    fi
+}
+
 # 检查服务状态
 is_active() {
-    systemctl is-active --quiet xray
+    if command -v systemctl &>/dev/null; then
+        systemctl is-active --quiet xray
+    elif command -v rc-service &>/dev/null; then
+        rc-service xray status | grep -q "started"
+    else
+        return 1
+    fi
 }
 
 # 显示菜单
 show_menu() {
     clear
-    echo -e "${green}=============================================${plain}"
+    echo -e "${green}==================================================${plain}"
     echo -e "  VLESS-REALITY 一键管理脚本"
     echo -e "  当前系统：$(ID= && [ -f /etc/os-release ] && . /etc/os-release && echo $ID || echo "unknown")"
     
@@ -41,14 +59,14 @@ show_menu() {
     else
         echo -e "  Xray状态： ${magenta}未运行${plain}"
     fi
-    echo -e "${green}=============================================${plain}"
+    echo -e "${green}==================================================${plain}"
     echo -e "  ${cyan}[1]${plain}  安装 VLESS-REALITY"
     echo -e "  ${cyan}[2]${plain}  查看节点链接"
     echo -e "  ${cyan}[3]${plain}  更改监听端口"
     echo -e "  ${cyan}[4]${plain}  重启服务"
     echo -e "  ${cyan}[5]${plain}  卸载 VLESS-REALITY"
     echo -e "  ${cyan}[0]${plain}  退出脚本"
-    echo -e "${green}=============================================${plain}"
+    echo -e "${green}==================================================${plain}"
     echo -ne "请输入数字选择 [0-5]: "
     read num
 }
@@ -57,6 +75,18 @@ show_menu() {
 install_reality() {
     install_dependencies
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+    
+    # 设置进程守护
+    if [ -f "$XRAY_SERVICE" ]; then
+        # Debian/Ubuntu (Systemd)
+        sed -i '/\[Service\]/a Restart=always\nRestartSec=5' "$XRAY_SERVICE"
+        systemctl daemon-reload
+    elif [ -f "$XRAY_INIT_ALPINE" ]; then
+        # Alpine (OpenRC)
+        sed -i 's/command_background="yes"/command_background="yes"\nrespawn_delay=5\nrespawn_max=0/' "$XRAY_INIT_ALPINE"
+        sed -i '/command_args=/a supervise_daemon_args="--respawn"' "$XRAY_INIT_ALPINE"
+    fi
+
     RANDOM_PORT=$(shuf -i 10000-65535 -n 1)
     UUID=${UUID:-$(cat /proc/sys/kernel/random/uuid)}
     output=$(/usr/local/bin/xray x25519)
@@ -97,10 +127,10 @@ install_reality() {
         ' > $XRAY_CONFIG
 
     chown -R nobody:nogroup /usr/local/etc/xray >/dev/null 2>&1 || chown -R nobody:nobody /usr/local/etc/xray >/dev/null 2>&1
-    systemctl daemon-reload
-    systemctl enable xray
-    systemctl restart xray
-    echo -e "${green}安装成功！初始端口：$RANDOM_PORT${plain}"
+    
+    manage_service enable
+    manage_service restart
+    echo -e "${green}安装成功！端口：$RANDOM_PORT${plain}"
     view_config
 }
 
@@ -149,31 +179,28 @@ change_port() {
             NEW_PORT=$input_port
         fi
 
-        # 检查占用
         if lsof -i:"$NEW_PORT" >/dev/null 2>&1; then
             echo -e "${magenta}错误：端口 $NEW_PORT 已被占用！${plain}"
             sleep 2 && return
         fi
         
-        # 写入并修复权限
         tmp=$(mktemp)
         jq --argjson p "$NEW_PORT" '.inbounds[0].port = $p' $XRAY_CONFIG > "$tmp" && mv "$tmp" $XRAY_CONFIG
         chown -R nobody:nogroup /usr/local/etc/xray >/dev/null 2>&1 || chown -R nobody:nobody /usr/local/etc/xray >/dev/null 2>&1
         
-        # 重启序列
-        systemctl stop xray >/dev/null 2>&1
+        manage_service stop >/dev/null 2>&1
         pkill -9 xray >/dev/null 2>&1
-        systemctl daemon-reload
-        systemctl start xray
+        [ -f "$XRAY_SERVICE" ] && systemctl daemon-reload
+        manage_service start
         
         sleep 3
         if is_active; then
-            echo -e "${green}成功：端口已改为 $NEW_PORT 并且 Xray 已重启${plain}"
+            echo -e "${green}成功：端口已改为 $NEW_PORT 服务已重启${plain}"
         else
-            echo -e "${magenta}失败：服务未能自动启动，请手动检查配置${plain}"
+            echo -e "${magenta}失败：服务未能自动启动${plain}"
         fi
     fi
-    sleep 3
+    sleep 2
 }
 
 # 卸载
@@ -191,7 +218,7 @@ while true; do
         1) install_reality ;;
         2) view_config ;;
         3) change_port ;;
-        4) systemctl restart xray && echo -e "${green}已执行 systemctl restart xray${plain}" && sleep 2 ;;
+        4) manage_service restart && echo -e "${green}已执行重启命令${plain}" && sleep 2 ;;
         5) uninstall_reality ;;
         0) exit 0 ;;
         *) echo -e "${magenta}选择错误！${plain}" && sleep 2 ;;
