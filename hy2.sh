@@ -75,7 +75,7 @@ change_port() {
     fi
     OLD_PORT=$(jq -r '.listen' "$CONF" | sed 's/://g')
     echo -e "当前端口为: ${YELLOW}$OLD_PORT${NC}"
-    read -p "请输入新端口 (10000-65535): " NEW_PORT
+    read -p "请输入新端口 (回车10000-65535随机): " NEW_PORT
     
     [[ -z "$NEW_PORT" ]] && NEW_PORT=$(( ( RANDOM % 55535 ) + 10000 ))
     if [[ ! "$NEW_PORT" =~ ^[0-9]+$ ]] || [ "$NEW_PORT" -lt 1 ] || [ "$NEW_PORT" -gt 65535 ]; then
