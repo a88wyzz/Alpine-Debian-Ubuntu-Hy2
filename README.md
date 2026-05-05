@@ -11,7 +11,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 
 # ✨ 功能
 
-* 安装 Hysteria2
+* 安装卸载 Hysteria2
 * 自动生成自签证书
 * 自动设置开机启动
 * 输出 IPv4 / IPv6 节点链接
@@ -19,7 +19,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 
 # ⚠️ 注意
 
-* Hysteria2使用UDP端口
-* 默认安装端口随机，完成后可自行更改
+* Hysteria2 使用 UDP 端口
 * 自签证书需允许不安全
 * VPS低于128M内存使用Hy2，建议在客户端设置合适带宽
