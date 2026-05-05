@@ -75,7 +75,8 @@ change_port() {
     fi
     OLD_PORT=$(jq -r '.listen' "$CONF" | sed 's/://g')
     echo -e "当前端口为: ${YELLOW}$OLD_PORT${NC}"
-    read -p "请输入新端口 (回车10000-65535随机): " NEW_PORT
+    echo -ne "${YELLOW}请输入新端口 (回车10000-65535随机): ${NC}"
+    read NEW_PORT
     
     [[ -z "$NEW_PORT" ]] && NEW_PORT=$(( ( RANDOM % 55535 ) + 10000 ))
     if [[ ! "$NEW_PORT" =~ ^[0-9]+$ ]] || [ "$NEW_PORT" -lt 1 ] || [ "$NEW_PORT" -gt 65535 ]; then
@@ -115,8 +116,8 @@ install_hy2() {
 
     PASSWORD=$(openssl rand -hex 4)
     
-    # --- 修改部分：增加安装时的端口交互 ---
-    read -p "请输入监听端口 (回车10000-65535随机): " PORT
+    echo -ne "${YELLOW}请输入监听端口 (回车10000-65535随机): ${NC}"
+    read PORT
     [[ -z "$PORT" ]] && PORT=$(( ( RANDOM % 55535 ) + 10000 ))
     if [[ ! "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
         echo -e "${RED}❌ 端口无效，使用随机端口${NC}"
