@@ -59,8 +59,8 @@ show_info() {
     echo -e "🎲 监听端口: ${YELLOW}$PORT${NC}"
     echo -e "🔐 认证密码: ${YELLOW}$PASSWORD${NC}"
     
-    [[ -n "$IP4" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv4):${NC}\n${YELLOW}hy2://$PASSWORD@$IP4:$PORT/?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_V4${NC}"
-    [[ -n "$IP6" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv6):${NC}\n${YELLOW}hy2://$PASSWORD@[$IP6]:$PORT/?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_V6${NC}"
+    [[ -n "$IP4" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv4):${NC}\n${YELLOW}hy2://$PASSWORD@$IP4:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_V4${NC}"
+    [[ -n "$IP6" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv6):${NC}\n${YELLOW}hy2://$PASSWORD@[$IP6]:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_V6${NC}"
     
     if [[ -z "$IP4" && -z "$IP6" ]]; then
         echo -e "${RED}❌ 无法检测到公网 IP${NC}"
