@@ -6,7 +6,8 @@ SERVER_NAME="www.bing.com"
 TAG="HY2"
 WORKDIR="/etc/hysteria"
 BIN="/usr/local/bin/hysteria"
-CONF="$WORKDIR/config.json"
+YQ_BIN="/usr/local/bin/yq"
+CONF="$WORKDIR/config.yaml"
 PORT_FILE="$WORKDIR/port.txt"
 PASS_FILE="$WORKDIR/password.txt"
 ### =====================
@@ -45,9 +46,9 @@ show_info() {
         return
     fi
 
-    # 使用 jq 精确解析 JSON
-    PORT=$(jq -r '.listen' "$CONF" | sed 's/://g')
-    PASSWORD=$(jq -r '.auth.password' "$CONF")
+    # 使用 yq 精确解析 YAML
+    PORT=$($YQ_BIN '.listen' "$CONF" | sed 's/://g')
+    PASSWORD=$($YQ_BIN '.auth.password' "$CONF")
 
     echo -e "${YELLOW}正在检测公网 IP 地址...${NC}"
     IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 icanhazip.com || echo "")
@@ -73,7 +74,7 @@ change_port() {
     if [ ! -f "$CONF" ]; then
         echo -e "${RED}❌ 请先安装 Hysteria2${NC}"; return
     fi
-    OLD_PORT=$(jq -r '.listen' "$CONF" | sed 's/://g')
+    OLD_PORT=$($YQ_BIN '.listen' "$CONF" | sed 's/://g')
     echo -e "当前端口为: ${YELLOW}$OLD_PORT${NC}"
     echo -ne "${YELLOW}请输入新端口 (回车10000-65535随机): ${NC}"
     read NEW_PORT
@@ -83,8 +84,7 @@ change_port() {
         echo -e "${RED}❌ 输入无效${NC}"; return
     fi
 
-    # 使用 jq 修改并回写
-    jq --arg p ":$NEW_PORT" '.listen = $p' "$CONF" > "$CONF.tmp" && mv "$CONF.tmp" "$CONF"
+    $YQ_BIN -i ".listen = \":$NEW_PORT\"" "$CONF"
     echo "$NEW_PORT" > "$PORT_FILE"
     
     command -v ufw >/dev/null 2>&1 && ufw allow "$NEW_PORT"/udp
@@ -97,9 +97,20 @@ change_port() {
 install_hy2() {
     echo -e "${YELLOW}▶ 正在安装依赖 ...${NC}"
     if [ "$OS" = "alpine" ]; then
-        apk add --no-cache curl openssl ca-certificates bash jq
+        apk add --no-cache curl openssl ca-certificates bash
     else
-        apt update && apt install -y curl openssl ca-certificates bash jq
+        apt update && apt install -y curl openssl ca-certificates bash
+    fi
+
+    if [ ! -f "$YQ_BIN" ]; then
+        echo -e "${YELLOW}▶ 安装 yq 工具...${NC}"
+        YQ_ARCH=$(uname -m)
+        case "$YQ_ARCH" in
+            x86_64) YQ_URL="https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64" ;;
+            aarch64) YQ_URL="https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64" ;;
+            *) echo "❌ 不支持的架构"; exit 1 ;;
+        esac
+        curl -L -o "$YQ_BIN" "$YQ_URL" && chmod +x "$YQ_BIN"
     fi
     
     mkdir -p "$WORKDIR"
@@ -123,7 +134,6 @@ install_hy2() {
         echo -e "${RED}❌ 端口无效，使用随机端口${NC}"
         PORT=$(( ( RANDOM % 55535 ) + 10000 ))
     fi
-    # ------------------------------------
 
     echo "$PASSWORD" > "$PASS_FILE"
     echo "$PORT" > "$PORT_FILE"
@@ -131,32 +141,35 @@ install_hy2() {
     echo -e "${YELLOW}▶ 生成自签证书...${NC}"
     openssl req -x509 -nodes -newkey rsa:2048 -keyout "$WORKDIR/key.pem" -out "$WORKDIR/cert.pem" -days 3650 -subj "/CN=$SERVER_NAME" 2>/dev/null
 
-    # 使用 jq 构建初始 JSON 配置
-    jq -n \
-        --arg port ":$PORT" \
-        --arg cert "$WORKDIR/cert.pem" \
-        --arg key "$WORKDIR/key.pem" \
-        --arg pass "$PASSWORD" \
-        --arg sni "$SERVER_NAME" \
-        '{
-            "listen": $port,
-            "tls": {
-                "cert": $cert,
-                "key": $key,
-                "alpn": ["h3"]
-            },
-            "auth": {
-                "type": "password",
-                "password": $pass
-            },
-            "masquerade": {
-                "type": "proxy",
-                "proxy": {
-                    "url": ("https://" + $sni),
-                    "rewriteHost": true
-                }
-            }
-        }' > "$CONF"
+    # 写入 YAML 服务端配置
+    cat > "$CONF" <<EOF
+listen: :$PORT
+
+resolver:
+  type: tls
+  tls:
+    addr: 1.1.1.1:853
+    timeout: 2s
+  udp:
+    addr: 8.8.8.8:53 
+    timeout: 2s
+
+tls:
+  cert: $WORKDIR/cert.pem
+  key: $WORKDIR/key.pem
+  alpn:
+    - h3
+
+auth:
+  type: password
+  password: $PASSWORD
+
+masquerade:
+  type: proxy
+  proxy:
+    url: https://$SERVER_NAME
+    rewriteHost: true
+EOF
 
     # 服务部署
     if [ "$OS" = "alpine" ]; then
@@ -211,7 +224,6 @@ uninstall_hy2() {
 }
 
 while true; do
-# 状态检测逻辑
 if [ "$OS" = "alpine" ]; then
     if rc-service hysteria status 2>/dev/null | grep -q "started"; then
         STATUS="${GREEN}正在运行${NC}"
@@ -226,7 +238,6 @@ else
     fi
 fi
 
-# 菜单
 clear
 echo -e "${GREEN}===============================================${NC}"
 echo -e "  Hysteria2 一键管理脚本"
