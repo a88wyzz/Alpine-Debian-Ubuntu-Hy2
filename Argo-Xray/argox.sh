@@ -40,6 +40,11 @@ for tool in unzip curl; do
     fi
 done
 
+# Alpine 特殊依赖安装: gcompat
+if [ "$(grep -i PRETTY_NAME /etc/os-release | cut -d \" -f2 | awk '{print $1}')" == "Alpine" ]; then
+    apk add gcompat
+fi
+
 if [ "$(grep -i PRETTY_NAME /etc/os-release | cut -d \" -f2 | awk '{print $1}')" != "Alpine" ] && [ -z "$(type -P systemctl)" ]; then
     ${linux_update[$n]}
     ${linux_install[$n]} systemctl
