@@ -18,7 +18,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 
 * 1.脚本执行选项2，等待出现域名授权链接。
 * <img width="728" height="121" alt="image" src="https://github.com/user-attachments/assets/554e70a3-846c-4567-8b44-e64c89762e58" />
-* 2.复制链接到浏览器打开，选择你要使用的域名进行授权。
-* 3.等待出现授权完成提示后，回到VPS输入完整域名即可。
+* 2.复制链接到浏览器打开，选择你要使用的域进行授权。
+* 3.等待出现授权完成提示后，回到VPS输入自定义完整域名即可。
 
 
