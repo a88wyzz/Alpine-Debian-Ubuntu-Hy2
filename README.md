@@ -12,7 +12,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 # ✨ 功能
 
 * 安装卸载 Hysteria2
-* 支持 Realms 模式
+* 支持Realms模式,第三方客户端目前暂未支持
 * 自动生成自签证书
 * 自动设置开机启动
 * 输出 IPv4 / IPv6 节点链接
