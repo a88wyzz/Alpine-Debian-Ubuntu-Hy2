@@ -215,8 +215,8 @@ install_hy2() {
     PASSWORD=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
 
     echo -e "\n${YELLOW}请选择运行模式：${NC}"
-    echo -e " ${CYAN}[1]${NC} 传统公网模式（需公网IP + 开放端口）"
-    echo -e " ${CYAN}[2]${NC} Realms P2P模式 （无需公网IP）"
+    echo -e " ${CYAN}[1]${NC} 传统公网模式（VPS有公网IP + 开放端口）"
+    echo -e " ${CYAN}[2]${NC} Realms-P2P模式 （VPS没有公网IP）"
     echo -ne "请输入 [1-2，默认1]: "
     read MODE_CHOICE
     [[ -z "$MODE_CHOICE" ]] && MODE_CHOICE=1
