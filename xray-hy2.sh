@@ -128,7 +128,7 @@ init_config() {
   "outbounds": [{ "protocol": "freedom", "tag": "direct" }],
   "dns": {
     "servers": ["https://1.1.1.1/dns-query", "8.8.8.8"],
-    "queryStrategy": "UseIPv4"
+    "queryStrategy": "UseIP"
   }
 }
 EOF
