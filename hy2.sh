@@ -10,6 +10,9 @@ YQ_BIN="/usr/local/bin/yq"
 CONF="$WORKDIR/config.yaml"
 PORT_FILE="$WORKDIR/port.txt"
 PASS_FILE="$WORKDIR/password.txt"
+CERT_FILE="$WORKDIR/server.crt"
+KEY_FILE="$WORKDIR/server.key"
+PINSHA_FILE="$WORKDIR/pinsha256.txt"
 ### =====================
 
 GREEN='\e[32m'
@@ -39,16 +42,25 @@ restart_service() {
     fi
 }
 
-# 获取并显示信息
+# 获取 pinSHA256
+get_pin_sha256() {
+    if [ -f "$PINSHA_FILE" ]; then
+        cat "$PINSHA_FILE"
+    else
+        echo ""
+    fi
+}
+
+# 显示配置信息
 show_info() {
     if [ ! -f "$CONF" ]; then
         echo -e "${RED}❌ 配置文件不存在${NC}"
         return
     fi
-
-    # 使用 yq 精确解析 YAML
+    
     PORT=$($YQ_BIN '.listen' "$CONF" | sed 's/://g')
     PASSWORD=$($YQ_BIN '.auth.password' "$CONF")
+    PINSHA256=$(get_pin_sha256)
 
     echo -e "${YELLOW}正在检测公网 IP 地址...${NC}"
     IP4=$(curl -s4 --connect-timeout 5 ip.sb || curl -s4 --connect-timeout 5 icanhazip.com || echo "")
@@ -59,10 +71,18 @@ show_info() {
     echo -e "📌 IPv6地址: ${YELLOW}$IP6${NC}"
     echo -e "🎲 监听端口: ${YELLOW}$PORT${NC}"
     echo -e "🔐 认证密码: ${YELLOW}$PASSWORD${NC}"
+    [[ -n "$PINSHA256" ]] && echo -e "🔑 pinSHA256: ${YELLOW}$PINSHA256${NC}"
+   
+    if [[ -n "$IP4" ]]; then
+        echo -e "\n${GREEN}📎 节点链接 (IPv4):${NC}"
+        echo -e "${YELLOW}hy2://$PASSWORD@$IP4:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1&pinSHA256=$PINSHA256#${TAG}_IPv4${NC}"
+    fi
     
-    [[ -n "$IP4" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv4):${NC}\n${YELLOW}hy2://$PASSWORD@$IP4:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_IPv4${NC}"
-    [[ -n "$IP6" ]] && echo -e "\n${GREEN}📎 节点链接 (IPv6):${NC}\n${YELLOW}hy2://$PASSWORD@[$IP6]:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1#${TAG}_IPv6${NC}"
-    
+    if [[ -n "$IP6" ]]; then
+        echo -e "\n${GREEN}📎 节点链接 (IPv6):${NC}"
+        echo -e "${YELLOW}hy2://$PASSWORD@[$IP6]:$PORT?sni=$SERVER_NAME&alpn=h3&insecure=1&pinSHA256=$PINSHA256#${TAG}_IPv6${NC}"
+    fi
+   
     if [[ -z "$IP4" && -z "$IP6" ]]; then
         echo -e "${RED}❌ 无法检测到公网 IP${NC}"
     fi
@@ -78,15 +98,14 @@ change_port() {
     echo -e "当前端口为: ${YELLOW}$OLD_PORT${NC}"
     echo -ne "${YELLOW}请输入新端口 (回车10000-65535随机): ${NC}"
     read NEW_PORT
-    
+   
     [[ -z "$NEW_PORT" ]] && NEW_PORT=$(( ( RANDOM % 55535 ) + 10000 ))
     if [[ ! "$NEW_PORT" =~ ^[0-9]+$ ]] || [ "$NEW_PORT" -lt 1 ] || [ "$NEW_PORT" -gt 65535 ]; then
         echo -e "${RED}❌ 输入无效${NC}"; return
     fi
-
     $YQ_BIN -i ".listen = \":$NEW_PORT\"" "$CONF"
     echo "$NEW_PORT" > "$PORT_FILE"
-    
+   
     command -v ufw >/dev/null 2>&1 && ufw allow "$NEW_PORT"/udp
     restart_service
     echo -e "${GREEN}✅ 端口已更改为 $NEW_PORT${NC}"
@@ -112,7 +131,7 @@ install_hy2() {
         esac
         curl -L -o "$YQ_BIN" "$YQ_URL" && chmod +x "$YQ_BIN"
     fi
-    
+   
     mkdir -p "$WORKDIR"
     ARCH=$(uname -m)
     case "$ARCH" in
@@ -125,8 +144,8 @@ install_hy2() {
     curl -L -o "$BIN" "https://github.com/apernet/hysteria/releases/latest/download/$FILE"
     chmod +x "$BIN"
 
-    PASSWORD=$(openssl rand -hex 4)
-    
+    PASSWORD=$(openssl rand -hex 8)
+
     echo -ne "${YELLOW}请输入监听端口 (回车10000-65535随机): ${NC}"
     read PORT
     [[ -z "$PORT" ]] && PORT=$(( ( RANDOM % 55535 ) + 10000 ))
@@ -138,29 +157,50 @@ install_hy2() {
     echo "$PASSWORD" > "$PASS_FILE"
     echo "$PORT" > "$PORT_FILE"
 
-    echo -e "${YELLOW}▶ 生成自签证书...${NC}"
-    openssl req -x509 -nodes -newkey rsa:2048 -keyout "$WORKDIR/key.pem" -out "$WORKDIR/cert.pem" -days 3650 -subj "/CN=$SERVER_NAME" 2>/dev/null
+    echo -e "${YELLOW}▶ 使用 hysteria cert 生成自签名证书...${NC}"
+    cd /root
+    
+    # 安静模式：输出保存到临时日志文件
+    CERT_LOG="/tmp/hysteria_cert.log"
+    $BIN cert > "$CERT_LOG" 2>&1
+    
+    echo -e "${GREEN}✅ 证书生成完成${NC}"
+    
+    # 从日志文件提取 pinSHA256
+    PINSHA256=$(grep -oE 'pinSHA256:[[:space:]]*[A-Za-z0-9+/=]+' "$CERT_LOG" | head -n1 | sed 's/pinSHA256:[[:space:]]*//')
 
-    # 写入 YAML 服务端配置
+    if [ -n "$PINSHA256" ]; then
+        echo "$PINSHA256" > "$PINSHA_FILE"
+        echo -e "${GREEN}✅ pinSHA256 提取成功${NC}"
+    else
+        echo -e "${RED}❌ 未能提取 pinSHA256${NC}"
+        echo -e "${YELLOW}日志内容：${NC}"
+        cat "$CERT_LOG"
+    fi
+    
+    rm -f "$CERT_LOG"
+
+    # 移动证书
+    mv -f server.crt "$CERT_FILE" 2>/dev/null || true
+    mv -f server.key "$KEY_FILE" 2>/dev/null || true
+
+    # 写入配置
     cat > "$CONF" <<EOF
 listen: :$PORT
-
 resolver:
   type: tls
   tls:
     addr: 1.1.1.1:853
     timeout: 5s
-
 tls:
-  cert: $WORKDIR/cert.pem
-  key: $WORKDIR/key.pem
+  cert: $CERT_FILE
+  key: $KEY_FILE
+  sniGuard: disable
   alpn:
     - h3
-
 auth:
   type: password
   password: $PASSWORD
-
 masquerade:
   type: proxy
   proxy:
@@ -196,7 +236,7 @@ EOF
         systemctl daemon-reload
         systemctl enable hysteria
     fi
-    
+   
     restart_service
     echo -e "${GREEN}✅ Hysteria2 安装完成 ${NC}"
     show_info
@@ -220,60 +260,46 @@ uninstall_hy2() {
     echo -e "${GREEN}✅ 卸载成功${NC}"
 }
 
+# 主菜单
 while true; do
-if [ "$OS" = "alpine" ]; then
-    if rc-service hysteria status 2>/dev/null | grep -q "started"; then
-        STATUS="${GREEN}正在运行${NC}"
+    if [ "$OS" = "alpine" ]; then
+        if rc-service hysteria status 2>/dev/null | grep -q "started"; then
+            STATUS="${GREEN}正在运行${NC}"
+        else
+            STATUS="${RED}未安装或未运行${NC}"
+        fi
     else
-        STATUS="${RED}未安装或未运行${NC}"
+        if systemctl is-active --quiet hysteria 2>/dev/null; then
+            STATUS="${GREEN}正在运行${NC}"
+        else
+            STATUS="${RED}未安装或未运行${NC}"
+        fi
     fi
-else
-    if systemctl is-active --quiet hysteria 2>/dev/null; then
-        STATUS="${GREEN}正在运行${NC}"
-    else
-        STATUS="${RED}未安装或未运行${NC}"
-    fi
-fi
 
-clear
-echo -e "${GREEN}===============================================${NC}"
-echo -e "  Hysteria2 一键管理脚本"
-echo -e "  当前系统: $OS"
-echo -e "  Hy2状态： $STATUS"
-echo -e "${GREEN}===============================================${NC}"
-echo -e "  ${CYAN}[1]${NC}  安装 Hysteria2"
-echo -e "  ${CYAN}[2]${NC}  查看配置节点链接"
-echo -e "  ${CYAN}[3]${NC}  更改监听端口"
-echo -e "  ${CYAN}[4]${NC}  重启服务"
-echo -e "  ${CYAN}[5]${NC}  卸载 Hysteria2"
-echo -e "  ${CYAN}[0]${NC}  退出脚本"
-echo -e "${GREEN}===============================================${NC}"
-echo -ne "请输入数字选择 [0-5]: "
-read choice
+    clear
+    echo -e "${GREEN}===============================================${NC}"
+    echo -e " Hysteria2 一键管理脚本"
+    echo -e " 当前系统: $OS"
+    echo -e " Hy2状态： $STATUS"
+    echo -e "${GREEN}===============================================${NC}"
+    echo -e " ${CYAN}[1]${NC} 安装 Hysteria2"
+    echo -e " ${CYAN}[2]${NC} 查看配置节点链接"
+    echo -e " ${CYAN}[3]${NC} 更改监听端口"
+    echo -e " ${CYAN}[4]${NC} 重启服务"
+    echo -e " ${CYAN}[5]${NC} 卸载 Hysteria2"
+    echo -e " ${CYAN}[0]${NC} 退出脚本"
+    echo -e "${GREEN}===============================================${NC}"
+    echo -ne "请输入数字选择 [0-5]: "
+    read choice
 
-case $choice in
-        1)
-            install_hy2
-            ;;
-        2)
-            show_info
-            ;;
-        3)
-            change_port
-            ;;
-        4)
-            restart_service && echo -e "${GREEN}服务已重启${NC}"
-            ;;
-        5)
-            uninstall_hy2
-            ;;
-        0)
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}无效输入，请重新选择${NC}"
-            sleep 1
-            ;;
+    case $choice in
+        1) install_hy2 ;;
+        2) show_info ;;
+        3) change_port ;;
+        4) restart_service && echo -e "${GREEN}服务已重启${NC}" ;;
+        5) uninstall_hy2 ;;
+        0) exit 0 ;;
+        *) echo -e "${RED}无效输入，请重新选择${NC}"; sleep 1 ;;
     esac
 
     echo -e "\n${YELLOW}按任意键返回主菜单...${NC}"
