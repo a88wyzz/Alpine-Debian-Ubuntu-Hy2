@@ -105,30 +105,47 @@ init_config() {
 
     cat > "$CONFIG_FILE" << EOF
 {
-  "log": { "loglevel": "warning" },
-  "inbounds": [{
-    "listen": "0.0.0.0",
-    "port": $port,
-    "protocol": "hysteria",
-    "tag": "hy2-in"
-    },
-    "streamSettings": {
-      "network": "hysteria",
-      "hysteriaSettings": {
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "listen": "0.0.0.0",
+      "port": $port,
+      "protocol": "hysteria",
+      "tag": "hy2-in",
+      "streamSettings": {
+        "network": "hysteria",
+        "hysteriaSettings": {
           "version": 2,
           "auth": "$default_auth",
           "udpIdleTimeout": 60
-            },
-      "security": "tls",
-      "tlsSettings": {
-        "alpn": ["h3"],
-        "certificates": [{ "certificateFile": "$CERT_FILE", "keyFile": "$KEY_FILE" }]
+        },
+        "security": "tls",
+        "tlsSettings": {
+          "alpn": [
+            "h3"
+          ],
+          "certificates": [
+            {
+              "certificateFile": "$CERT_FILE",
+              "keyFile": "$KEY_FILE"
+            }
+          ]
+        }
       }
     }
-  }],
-  "outbounds": [{ "protocol": "freedom", "tag": "direct" }],
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    }
+  ],
   "dns": {
-    "servers": ["https://dns.google/dns-query"],
+    "servers": [
+      "https://dns.google/dns-query"
+    ],
     "queryStrategy": "UseIP"
   }
 }
