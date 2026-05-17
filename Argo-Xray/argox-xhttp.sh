@@ -239,7 +239,7 @@ else
 fi
 
 echo -e "${cyan}======================================================${plain}"
-echo -e "          Argo-Xray 管理脚本 - [XHTTP仅支持固定隧道]"
+echo -e " Argo-Xray 管理脚本 - [XHTTP仅支持固定隧道]"
 echo -e " 当前系统：${yellow}$(grep -i PRETTY_NAME /etc/os-release | cut -d'"' -f2)${plain}"
 echo -n " Argo 状态: "
 [ $argostatus -gt 0 ] && echo -ne "${green}● running${plain} ($mode_type)" || echo -ne "${red}○ stopped${plain}"
