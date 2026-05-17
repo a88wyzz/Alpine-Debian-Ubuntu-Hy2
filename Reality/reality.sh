@@ -81,7 +81,7 @@ is_active() {
 show_menu() {
     clear
     echo -e "${green}==================================================${plain}"
-    echo -e "  VLESS-REALITY 一键管理脚本"
+    echo -e "  Xray-Reality 一键管理脚本"
     echo -e "  当前系统：$(ID= && [ -f /etc/os-release ] && . /etc/os-release && echo $ID || echo "unknown")"
     
     if is_active; then
@@ -90,11 +90,11 @@ show_menu() {
         echo -e "  Xray状态： ${magenta}未运行${plain}"
     fi
     echo -e "${green}==================================================${plain}"
-    echo -e "  ${cyan}[1]${plain}  安装 VLESS-REALITY"
+    echo -e "  ${cyan}[1]${plain}  安装 Xray-Reality"
     echo -e "  ${cyan}[2]${plain}  查看节点链接"
     echo -e "  ${cyan}[3]${plain}  更改监听端口"
     echo -e "  ${cyan}[4]${plain}  重启服务"
-    echo -e "  ${cyan}[5]${plain}  卸载 VLESS-REALITY"
+    echo -e "  ${cyan}[5]${plain}  卸载 Xray-Reality"
     echo -e "  ${cyan}[0]${plain}  退出脚本"
     echo -e "${green}==================================================${plain}"
     echo -ne "请输入数字选择 [0-5]: "
@@ -138,11 +138,11 @@ install_reality() {
               "decryption": "none"
             },
             "streamSettings": {
-              "network": "tcp",
+              "network": "raw",
               "security": "reality",
               "realitySettings": {
                 "show": false,
-                "dest": "www.shopify.com:443",
+                "target": "www.shopify.com:443",
                 "xver": 0,
                 "serverNames": ["www.shopify.com"],
                 "privateKey": $priv,
