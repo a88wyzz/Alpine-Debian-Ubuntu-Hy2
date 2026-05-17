@@ -99,7 +99,7 @@ install_xray_binary() {
 init_config() {
     mkdir -p "$CONFIG_DIR"
     local port=$((RANDOM % 55536 + 10000))
-    local default_auth=$(cat /dev/urandom | tr -dc 'a-z0-9A-Z' | fold -w 32 | head -n 1)
+    local default_auth=$(openssl rand -hex 8)
 
     echo -e "${YELLOW}▶ 正在生成 Hysteria2 配置文件（端口：$port）...${RESET}"
 
@@ -110,14 +110,15 @@ init_config() {
     "listen": "0.0.0.0",
     "port": $port,
     "protocol": "hysteria",
-    "tag": "hy2-in",
-    "settings": {
-      "version": 2,
-      "clients": [{ "auth": "$default_auth", "level": 0 }],
-      "congestion": { "type": "bbr" }
+    "tag": "hy2-in"
     },
     "streamSettings": {
       "network": "hysteria",
+      "hysteriaSettings": {
+          "version": 2,
+          "auth": "$default_auth",
+          "udpIdleTimeout": 60
+            },
       "security": "tls",
       "tlsSettings": {
         "alpn": ["h3"],
@@ -127,7 +128,7 @@ init_config() {
   }],
   "outbounds": [{ "protocol": "freedom", "tag": "direct" }],
   "dns": {
-    "servers": ["https://1.1.1.1/dns-query", "8.8.8.8"],
+    "servers": ["https://dns.google/dns-query"],
     "queryStrategy": "UseIP"
   }
 }
