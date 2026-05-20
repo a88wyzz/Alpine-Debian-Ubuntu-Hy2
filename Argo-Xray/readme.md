@@ -4,13 +4,13 @@
 
 支持架构： x86_64 / ARM64
 
-* WS 协议支持临时、固定隧道 (WS协议以后可能会被Xray弃用)
+* Websocket 传输协议支持临时、固定隧道
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/Argo-Xray/argox-ws.sh)
 
 ```
 
-* XHTTP 协议仅支持固定隧道
+* XHTTP 传输协议仅支持固定隧道
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu-Hy2/main/Argo-Xray/argox-xhttp.sh)
 
