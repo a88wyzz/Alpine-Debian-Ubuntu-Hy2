@@ -162,7 +162,7 @@ install_tuic() {
     fi
 
     UUID=$(cat /proc/sys/kernel/random/uuid)
-    PASS=$(openssl rand -hex 4)
+    PASS=$(openssl rand -base64 12)
     BIND_ADDR="0.0.0.0"
     ip -6 addr | grep -q "global" && BIND_ADDR="[::]"
 
