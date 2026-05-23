@@ -96,7 +96,7 @@ install_juicity() {
     PORT=${PORT:-$DEFAULT_PORT}
     
     UUID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1 | sed 's/\(.\{8\}\)\(.\{4\}\)\(.\{4\}\)\(.\{4\}\)\(.\{12\}\)/\1-\2-\3-\4-\5/')
-    PASS=$(openssl rand -hex 4)
+    PASS=$(openssl rand -base64 12)
 
     mkdir -p /etc/juicity
     jq -n \
