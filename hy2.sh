@@ -144,7 +144,7 @@ install_hy2() {
     curl -L -o "$BIN" "https://download.hysteria.network/app/latest/$FILE"
     chmod +x "$BIN"
 
-    PASSWORD=$(openssl rand -hex 8)
+    PASSWORD=$(openssl rand -base64 12)
 
     echo -ne "${YELLOW}请输入监听端口 (回车10000-65535随机): ${NC}"
     read PORT
