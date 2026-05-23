@@ -188,7 +188,7 @@ install_anytls() {
     read INPUT_PORT
     [[ "$INPUT_PORT" =~ ^[0-9]+$ ]] && PORT=$INPUT_PORT || PORT=$(( ( RANDOM % 50000 ) + 10000 ))
 
-    PASS=$(openssl rand -hex 4)
+    PASS=$(openssl rand -base64 12)
 
     cat > $CONF <<EOF
 {
