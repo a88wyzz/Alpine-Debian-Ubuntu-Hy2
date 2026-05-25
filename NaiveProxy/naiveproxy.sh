@@ -210,7 +210,7 @@ menu(){
     while true; do
         clear
         echo -e "${CYAN}┌──────────────────────────────────────────────────┐${PLAIN}"
-        echo -e "${CYAN}│${PLAIN}  ${BOLD}${YELLOW}NaiveProxy${PLAIN} 一键管理脚本 ${CYAN}│${PLAIN}  内核: ${BLUE}${BOLD}Caddy v2.x${PLAIN} ${CYAN}│${PLAIN}"
+        echo -e "${CYAN}│${PLAIN}  ${BOLD}${YELLOW}NaiveProxy 一键管理脚本  │${PLAIN}}"
         echo -e "${CYAN}├──────────────────────────────────────────────────┤${PLAIN}"
         echo -e "${CYAN}│${PLAIN}  系统: ${GREEN}$SYSTEM${PLAIN}"
         echo -e "${CYAN}│${PLAIN}  架构: ${GREEN}$ARCH${PLAIN}"
