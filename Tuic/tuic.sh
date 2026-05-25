@@ -150,7 +150,6 @@ install_tuic() {
     fi
     chmod +x $BIN
 
-    echo -e "\n${GREEN}--- 基础配置 ---${NC}"
     echo -ne "${GREEN}请输入监听端口 (直接回车则随机生成): ${NC}"
     read INPUT_PORT
 
@@ -209,8 +208,15 @@ command="${BIN}"
 command_args="-c ${CONF}"
 pidfile="/run/\${RC_SVCNAME}.pid"
 command_background=true
+supervise_daemon="yes"
+respawn_delay=2
+respawn_max=0
 depend() {
     need net
+}
+
+start_pre() {
+    mkdir -p /run/\${RC_SVCNAME}
 }
 EOF
         chmod +x /etc/init.d/${SERVICE_NAME}
