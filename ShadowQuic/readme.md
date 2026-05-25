@@ -20,5 +20,5 @@ bash <(curl -fsSL https://raw.githubusercontent.com/a88wyzz/Alpine-Debian-Ubuntu
 
 * ShadowQuic 使用 UDP 端口
 * 新建一个client.yaml文件，把服务端输出的客户端配置复制进去
-* 使用 shadowquic.exe -c client.yaml 批处理运行
+* 使用 shadowquic.exe -c client.yaml 批处理运行 [下载 shadowquic-x86_64-windows.exe](https://github.com/spongebob888/shadowquic/releases/latest/download/shadowquic-x86_64-windows.exe)
 * 默认监听 127.0.0.1:12088 可以在图形客户端新建socks5进行分流
