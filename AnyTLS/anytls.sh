@@ -72,26 +72,20 @@ WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
     else
-    cat > /etc/init.d/${SERVICE_NAME} <<EOF
+        cat > /etc/init.d/${SERVICE_NAME} <<EOF
 #!/sbin/openrc-run
+name="${SERVICE_NAME}"
 description="AnyTLS-Go Server"
 command="${BIN}"
 command_args="-l ${bind_addr}:${port} -p ${pass}"
-pidfile="/run/\${RC_SVCNAME}.pid"
+pidfile="/run/${SERVICE_NAME}.pid"
 command_background=true
-supervise_daemon="yes"
-respawn_delay=2
-respawn_max=0
-
+supervisor="supervise-daemon"
 depend() {
     need net
 }
-
-start_pre() {
-    mkdir -p /run/\${RC_SVCNAME}
-}
 EOF
-    chmod +x /etc/init.d/${SERVICE_NAME}
+        chmod +x /etc/init.d/${SERVICE_NAME}
     fi
 }
 
