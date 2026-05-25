@@ -89,9 +89,8 @@ install_juicity() {
     
     generate_bing_cert
 
-    echo -e "\n${GREEN}--- 基础配置 ---${NC}"
     DEFAULT_PORT=$((RANDOM % 50000 + 10000))
-    echo -ne "${GREEN}请输入监听端口 (回车默认随机 $DEFAULT_PORT): ${NC}"
+    echo -ne "${YELLOW}请输入监听端口 (回车随机生成 $DEFAULT_PORT): ${NC}"
     read PORT
     PORT=${PORT:-$DEFAULT_PORT}
     
@@ -128,29 +127,19 @@ WantedBy=multi-user.target
 EOF
         systemctl daemon-reload && systemctl enable juicity && systemctl restart juicity
     else
-    cat <<EOF > /etc/init.d/juicity
+        cat <<EOF > /etc/init.d/juicity
 #!/sbin/openrc-run
+name="juicity"
 description="Juicity Server"
 command="$BIN_FILE"
 command_args="run -c $CONFIG_FILE"
 pidfile="/run/juicity.pid"
 command_background=true
-supervise_daemon="yes"
-respawn_delay=2
-respawn_max=0
-
-depend() {
-    need net
-}
-
-start_pre() {
-    mkdir -p /run/juicity
-}
+supervisor="supervise-daemon"
 EOF
-
-    chmod +x /etc/init.d/juicity
-    rc-update add juicity default && rc-service juicity restart
-fi
+        chmod +x /etc/init.d/juicity
+        rc-update add juicity default && rc-service juicity restart
+    fi
 
     echo -e "${GREEN}✅ 安装并启动完成！${NC}"
     view_config
