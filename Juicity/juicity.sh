@@ -156,11 +156,6 @@ view_config() {
     echo -e "${YELLOW}正在检测公网 IP 地址...${NC}"
     IP4=$(curl -s4 ip.sb || curl -s4 icanhazip.com || echo "")
     IP6=$(curl -s6 ip.sb || curl -s6 icanhazip.com || echo "")
-    
-    CERT_HASH=$($BIN_FILE generate-certchain-hash --cert $CERT_DIR/fullchain.pem 2>/dev/null | head -n 1)
-    if [ -z "$CERT_HASH" ]; then
-        CERT_HASH=$(openssl x509 -in $CERT_DIR/fullchain.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
-    fi
 
     echo -e "\n${GREEN}========== Juicity 节点配置 ==========${NC}"
     echo -e "🎲 端口: ${YELLOW}${PORT}${NC}"
@@ -169,7 +164,7 @@ view_config() {
     echo -e "🔑 Hash: ${YELLOW}${CERT_HASH}${NC}"
     echo -e "${GREEN}=======================================${NC}"
     
-    QUERY="congestion_control=bbr&sni=www.bing.com&alpn=h3&allow_insecure=1&pinned_certchain_sha256=${CERT_HASH}"
+    QUERY="sni=www.bing.com&alpn=h3&insecure=1"
     
     if [ -n "$IP4" ]; then
         echo -e "\n${CYAN}📎 IPv4 节点链接:${NC}"
