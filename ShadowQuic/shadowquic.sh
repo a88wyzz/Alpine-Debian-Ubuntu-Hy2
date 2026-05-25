@@ -19,7 +19,6 @@ fi
 # 动态判断初始化服务类型
 if [ -f /sbin/openrc-run ] || [ -d /etc/init.d ] && ! [ -x /bin/systemctl ]; then
     SERVICE_FILE="/etc/init.d/shadowquic"
-    GUARDIAN_PID_FILE="/var/run/shadowquic-guardian.pid"
 else
     SERVICE_FILE="/etc/systemd/system/shadowquic@.service"
     SERVICE_INSTANCE="server"
@@ -85,79 +84,37 @@ create_service() {
         cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=ShadowQuic Server
-Documentation=https://github.com/spongebob888/shadowquic
-After=network-online.target
-Wants=network-online.target
+After=network.target
 
 [Service]
 Type=simple
-DynamicUser=yes
 ExecStart=$INSTALL_DIR/$APP_NAME -c $CONFIG_DIR/%i.yaml
 Restart=always
 RestartSec=3
 LimitNOFILE=1048576
-StateDirectory=shadowquic
-RuntimeDirectory=shadowquic
-NoNewPrivileges=true
-PrivateTmp=true
-PrivateDevices=true
-ProtectSystem=strict
-ProtectHome=true
-ProtectControlGroups=true
-ProtectKernelLogs=true
-LockPersonality=true
-RestrictRealtime=true
-RestrictSUIDSGID=true
-RemoveIPC=true
-UMask=0077
-SystemCallArchitectures=native
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-RestrictNamespaces=true
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target
 EOF
         systemctl daemon-reload
     else
-        log_info "创建 OpenRC 服务及守护进程管理器..."
+        log_info "创建 OpenRC 服务..."
         cat > "$SERVICE_FILE" <<EOF
 #!/sbin/openrc-run
 
-description="ShadowQuic Server (with Alpine Process Guardian)"
+name="shadowquic"
+description="ShadowQuic Server"
+
+command="$INSTALL_DIR/$APP_NAME"
+command_args="-c $CONFIG_DIR/server.yaml"
+pidfile="/run/\${RC_SVCNAME}.pid"
+
+command_background=true
+supervisor="supervise-daemon"
 
 depend() {
     need net
     after firewall
-}
-
-start() {
-    ebegin "Starting ShadowQuic Guardian"
-    
-    pidof $APP_NAME >/dev/null && killall $APP_NAME
-    
-    (
-        while true; do
-            if ! pidof $APP_NAME >/dev/null; then
-                $INSTALL_DIR/$APP_NAME -c $CONFIG_DIR/server.yaml >/dev/null 2>&1 &
-            fi
-            sleep 3
-        done
-    ) &
-    echo \$! > "$GUARDIAN_PID_FILE"
-    
-    eend \$?
-}
-
-stop() {
-    ebegin "Stopping ShadowQuic Guardian and Server"
-    if [ -f "$GUARDIAN_PID_FILE" ]; then
-        kill \$(cat "$GUARDIAN_PID_FILE") 2>/dev/null
-        rm -f "$GUARDIAN_PID_FILE"
-    fi
-    killall $APP_NAME 2>/dev/null
-    eend \$?
 }
 EOF
         chmod +x "$SERVICE_FILE"
@@ -364,7 +321,6 @@ uninstall_shadowquic() {
     
     stop_service_engine
     rm -f "$SERVICE_FILE"
-    rm -f "$GUARDIAN_PID_FILE" 2>/dev/null
     rm -rf "$CONFIG_DIR"
     rm -f "$INSTALL_DIR/$APP_NAME"
     [ -x /bin/systemctl ] && systemctl daemon-reload
