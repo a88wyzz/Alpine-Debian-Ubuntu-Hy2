@@ -211,6 +211,7 @@ install_shadowquic() {
     PORT=$(shuf -i 10001-65535 -n 1)
     USERNAME=$(generate_random_8digit)
     PASSWORD=$(generate_random_8digit)
+    SERVER_NAME="www.shopify.com"
     
     cat > "$CONFIG_FILE" <<EOF
 inbound:
@@ -220,7 +221,7 @@ inbound:
         - username: "${USERNAME}"
           password: "${PASSWORD}"
     jls-upstream:
-        addr: "www.shopify.com:443"
+        addr: "${SERVER_NAME}:443"
     alpn: ["h3"]
     congestion-control: bbr
     zero-rtt: true
@@ -255,7 +256,6 @@ show_config() {
     PORT=$(grep 'bind-addr:' "$CONFIG_FILE" | grep -oE '[0-9]+')
     USERNAME=$(grep 'username:' "$CONFIG_FILE" | head -n 1 | awk -F '"' '{print $2}')
     PASSWORD=$(grep 'password:' "$CONFIG_FILE" | head -n 1 | awk -F '"' '{print $2}')
-    SERVER_NAME="www.shopify.com"
     
     local_ipv4=$(curl -s4m 5 api.ipify.org || curl -s4m 5 ip.sb)
     local_ipv6=$(curl -s6m 5 api.ipify.org || curl -s6m 5 ip.sb)
