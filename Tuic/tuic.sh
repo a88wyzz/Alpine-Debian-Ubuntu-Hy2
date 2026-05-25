@@ -108,7 +108,7 @@ change_port() {
     HOST=$(echo $OLD_ADDR | rev | cut -d: -f2- | rev)
     
     echo -e "当前监听端口为: ${YELLOW}$OLD_PORT${NC}"
-    echo -ne "${GREEN}请输入新端口 (直接回车则随机生成): ${NC}"
+    echo -ne "${GREEN}请输入新端口 (回车随机生成): ${NC}"
     read NEW_PORT
     
     [[ -z "$NEW_PORT" ]] && NEW_PORT=$(( ( RANDOM % 50000 ) + 10000 ))
@@ -150,7 +150,7 @@ install_tuic() {
     fi
     chmod +x $BIN
 
-    echo -ne "${GREEN}请输入监听端口 (直接回车则随机生成): ${NC}"
+    echo -ne "${YELLOW}请输入监听端口 (回车随机生成): ${NC}"
     read INPUT_PORT
 
     if [[ "$INPUT_PORT" =~ ^[0-9]+$ ]] && [ "$INPUT_PORT" -ge 1 ] && [ "$INPUT_PORT" -le 65535 ]; then
@@ -203,20 +203,15 @@ EOF
     else
         cat > /etc/init.d/${SERVICE_NAME} <<EOF
 #!/sbin/openrc-run
+name="${SERVICE_NAME}"
 description="TUIC Server"
 command="${BIN}"
 command_args="-c ${CONF}"
-pidfile="/run/\${RC_SVCNAME}.pid"
+pidfile="/run/${SERVICE_NAME}.pid"
 command_background=true
-supervise_daemon="yes"
-respawn_delay=2
-respawn_max=0
+supervisor="supervise-daemon"
 depend() {
     need net
-}
-
-start_pre() {
-    mkdir -p /run/\${RC_SVCNAME}
 }
 EOF
         chmod +x /etc/init.d/${SERVICE_NAME}
