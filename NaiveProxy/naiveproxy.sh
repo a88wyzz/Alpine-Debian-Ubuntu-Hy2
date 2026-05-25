@@ -140,11 +140,13 @@ EOF
     else
         cat << 'EOF' > /etc/init.d/caddy
 #!/sbin/openrc-run
+name="caddy"
 description="Caddy for NaiveProxy"
 command="/usr/bin/caddy"
 command_args="run --config /etc/caddy/Caddyfile --adapter caddyfile"
 pidfile="/run/${RC_SVCNAME}.pid"
 command_background=true
+supervisor="supervise-daemon"
 EOF
         chmod +x /etc/init.d/caddy
         rc-update add caddy default
