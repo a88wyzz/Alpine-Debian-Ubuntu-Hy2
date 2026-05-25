@@ -161,7 +161,6 @@ view_config() {
     echo -e "🎲 端口: ${YELLOW}${PORT}${NC}"
     echo -e "📌 UUID: ${YELLOW}${UUID}${NC}"
     echo -e "🔐 密码: ${YELLOW}${PASS}${NC}"
-    echo -e "🔑 Hash: ${YELLOW}${CERT_HASH}${NC}"
     echo -e "${GREEN}=======================================${NC}"
     
     QUERY="sni=www.bing.com&alpn=h3&insecure=1"
