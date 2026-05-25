@@ -128,17 +128,29 @@ WantedBy=multi-user.target
 EOF
         systemctl daemon-reload && systemctl enable juicity && systemctl restart juicity
     else
-        cat <<EOF > /etc/init.d/juicity
+    cat <<EOF > /etc/init.d/juicity
 #!/sbin/openrc-run
 description="Juicity Server"
 command="$BIN_FILE"
 command_args="run -c $CONFIG_FILE"
-command_background=true
 pidfile="/run/juicity.pid"
+command_background=true
+supervise_daemon="yes"
+respawn_delay=2
+respawn_max=0
+
+depend() {
+    need net
+}
+
+start_pre() {
+    mkdir -p /run/juicity
+}
 EOF
-        chmod +x /etc/init.d/juicity
-        rc-update add juicity default && rc-service juicity restart
-    fi
+
+    chmod +x /etc/init.d/juicity
+    rc-update add juicity default && rc-service juicity restart
+fi
 
     echo -e "${GREEN}✅ 安装并启动完成！${NC}"
     view_config
