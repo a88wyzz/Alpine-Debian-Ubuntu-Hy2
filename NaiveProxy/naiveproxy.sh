@@ -82,7 +82,8 @@ installProxy(){
     echo ""
     read -rp " 请输入监听端口 [回车随机]：" proxyport
     [[ -z $proxyport ]] && proxyport=$(shuf -i 10000-65535 -n 1)
-    read -rp " 请输入你的域名 (Domain)：" domain
+    yellow " 请输入解析本机的完整域名 [必须提供域名]："
+    read -r domain
     [[ -z $domain ]] && red " 错误: 必须提供域名！" && exit 1
     read -rp " 请输入用户名 [回车随机]：" proxyname
     [[ -z $proxyname ]] && proxyname=$(date +%s | md5sum | cut -c 1-8)
@@ -113,11 +114,16 @@ EOF
     cat <<EOF > /root/naive/naive-client.json
 {
   "listen": "socks://127.0.0.1:1080",
-  "proxy": "https://${proxyname}:${proxypwd}@${domain}:${proxyport}",
+  "proxy": "https://${proxyname}:${proxypwd}@${domain}:${proxyport}?sni=${domain}",
   "log": ""
 }
 EOF
-    echo "naive+https://${proxyname}:${proxypwd}@${domain}:${proxyport}?padding=true#Naive" > /root/naive/naive-url.txt
+
+    cat > /root/naive/naive-url.txt << EOF
+naive+https://${proxyname}:${proxypwd}@${domain}:${proxyport}?padding=true&sni=${domain}#Naive
+
+naive+quic://${proxyname}:${proxypwd}@${domain}:${proxyport}?padding=true&sni=${domain}#Naive
+EOF
 
     if [[ -d /run/systemd/system ]] || [[ $SYSTEM != "Alpine" ]]; then
         cat << EOF >/etc/systemd/system/caddy.service
@@ -160,6 +166,8 @@ EOF
 changePort(){
     if [[ ! -f /etc/caddy/Caddyfile ]]; then
         red "未检测到配置文件，请先执行安装！"
+        echo ""
+        read -n 1 -s -r -p "按任意键返回主菜单..."
         return
     fi
     oldport=$(grep -oP '^:\d+' /etc/caddy/Caddyfile | head -n 1 | tr -d ':')
@@ -177,17 +185,15 @@ changePort(){
 }
 
 uninstallProxy(){
-    yellow "\n确定要卸载 NaiveProxy 吗？(y/n)"
-    read -rp " 选择: " confirm
-    [[ "$confirm" != "y" ]] && return
-    
     if command -v systemctl >/dev/null 2>&1; then
         systemctl stop caddy && systemctl disable caddy
     else
         rc-service caddy stop && rc-update del caddy default
     fi
     rm -rf /etc/caddy /root/naive /usr/bin/caddy /etc/systemd/system/caddy.service /etc/init.d/caddy
-    green "\n卸载已完成。系统已恢复干净状态。"
+    green "\n Naiveproxy已卸载完成。"
+    echo ""
+    read -n 1 -s -r -p "按任意键返回主菜单..."
 }
 
 showconf(){
@@ -196,10 +202,13 @@ showconf(){
         red " 错误: 配置文件不存在，请确认是否已安装！"
     else
         yellow " [1] 节点 JSON 配置 (V2RayN / Clash):"
+        echo ""
         echo -e "${RED}$(cat /root/naive/naive-client.json)${PLAIN}"
         echo ""
         yellow " [2] 节点分享链接 (Throne / V2RayN):"
+        echo ""
         echo -e "${GREEN}$(cat /root/naive/naive-url.txt)${PLAIN}"
+        echo ""
     fi
     echo -e "${CYAN}${BOLD}======================================================${PLAIN}"
     echo ""
@@ -210,17 +219,17 @@ menu(){
     while true; do
         clear
         echo -e "${CYAN}┌──────────────────────────────────────────────────┐${PLAIN}"
-        echo -e "${CYAN}│${PLAIN}  ${BOLD}${YELLOW}NaiveProxy 一键管理脚本  │${PLAIN}}"
+        echo -e "${CYAN}│${PLAIN}  ${BOLD}${YELLOW}NaiveProxy${PLAIN} 	一键管理脚本"
         echo -e "${CYAN}├──────────────────────────────────────────────────┤${PLAIN}"
         echo -e "${CYAN}│${PLAIN}  系统: ${GREEN}$SYSTEM${PLAIN}"
         echo -e "${CYAN}│${PLAIN}  架构: ${GREEN}$ARCH${PLAIN}"
         echo -e "${CYAN}└──────────────────────────────────────────────────┘${PLAIN}"
         echo ""
-        echo -e "  ${BOLD}${BLUE}1.${PLAIN} ${BOLD}安装 NaiveProxy${PLAIN}"
-        echo -e "  ${BOLD}${BLUE}2.${PLAIN} ${BOLD}查看 配置信息${PLAIN}"
-        echo -e "  ${BOLD}${BLUE}3.${PLAIN} ${BOLD}修改 节点端口${PLAIN}"
-        echo -e "  ${BOLD}${BLUE}4.${PLAIN} ${BOLD}${RED}卸载 NaiveProxy${PLAIN}"
-        echo -e "  ${BOLD}${BLUE}0.${PLAIN} 退出脚本"
+        echo -e "  ${BOLD}${YELLOW}[1]${PLAIN} ${BOLD}安装 NaiveProxy${PLAIN}"
+        echo -e "  ${BOLD}${YELLOW}[2]${PLAIN} ${BOLD}查看 配置信息${PLAIN}"
+        echo -e "  ${BOLD}${YELLOW}[3]${PLAIN} ${BOLD}修改 节点端口${PLAIN}"
+        echo -e "  ${BOLD}${YELLOW}[4]${PLAIN} ${BOLD}${RED}卸载 NaiveProxy${PLAIN}"
+        echo -e "  ${BOLD}${YELLOW}[0]${PLAIN} 退出脚本"
         echo ""
         echo -e "${CYAN}────────────────────────────────────────────────────${PLAIN}"
         read -rp " 请选择操作 [0-4] ：" answer
