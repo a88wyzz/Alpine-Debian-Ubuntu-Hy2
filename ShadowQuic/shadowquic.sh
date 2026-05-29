@@ -101,14 +101,11 @@ EOF
         log_info "创建 OpenRC 服务..."
         cat > "$SERVICE_FILE" <<EOF
 #!/sbin/openrc-run
-
 name="shadowquic"
 description="ShadowQuic Server"
-
 command="$INSTALL_DIR/$APP_NAME"
 command_args="-c $CONFIG_DIR/server.yaml"
 pidfile="/run/\${RC_SVCNAME}.pid"
-
 command_background=true
 supervisor="supervise-daemon"
 
