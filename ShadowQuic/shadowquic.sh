@@ -27,6 +27,7 @@ fi
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+CYAN='\e[36m'
 PLAIN='\033[0m'
 
 log_info() { echo -e "${YELLOW}$1${PLAIN}"; }
@@ -101,11 +102,14 @@ EOF
         log_info "创建 OpenRC 服务..."
         cat > "$SERVICE_FILE" <<EOF
 #!/sbin/openrc-run
+
 name="shadowquic"
 description="ShadowQuic Server"
+
 command="$INSTALL_DIR/$APP_NAME"
 command_args="-c $CONFIG_DIR/server.yaml"
 pidfile="/run/\${RC_SVCNAME}.pid"
+
 command_background=true
 supervisor="supervise-daemon"
 
@@ -327,19 +331,19 @@ uninstall_shadowquic() {
 
 show_menu() {
     clear
-    echo "========================================"
+    echo -e "$GREEN========================================$PLAIN"
     echo "ShadowQUIC 管理脚本 "
     echo "当前系统: ${CURRENT_OS}"
     echo "运行状态: $(get_status)"
-    echo "========================================"
-    echo "1. 安装 ShadowQUIC"
-    echo "2. 查看配置"
-    echo "3. 修改端口"
-    echo "4. 重启服务"
-    echo "5. 更新程序"
-    echo "6. 卸载 ShadowQUIC"
-    echo "0. 退出"
-    echo "========================================"
+    echo -e "$GREEN========================================$PLAIN"
+    echo -e "${CYAN}[1].$PLAIN 安装 ShadowQUIC"
+    echo -e "${CYAN}[2].$PLAIN 查看配置"
+    echo -e "${CYAN}[3].$PLAIN 修改端口"
+    echo -e "${CYAN}[4].$PLAIN 重启服务"
+    echo -e "${CYAN}[5].$PLAIN 更新程序"
+    echo -e "${CYAN}[6].$PLAIN 卸载 ShadowQUIC"
+    echo -e "${CYAN}[0].$PLAIN 退出"
+    echo -e "$GREEN========================================$PLAIN"
     echo -n "请输入选项 [0-6]: "
 }
 
